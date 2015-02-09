@@ -1,12 +1,10 @@
 // Bar graph 
- 
-var dataset_runs = [ 7, 9, 11, 17, 0, 26, 20, 16, 14, 10, 19, 16, 12, 25, 13, 12, 0, 16, 22, 21, 15, 17, 20, 16 ];
-var dataset_error = [ 5, 3, 9, 8, 0, 25, 13, 16, 11, 1, 12, 12, 1, 0, 1, 12, 0, 0, 12, 6, 7, 4, 5, 9 ];
 
 var w = 500;
 var h = 150;
 var padding = {left: 30, right: 10, top: 10, bottom: 30};
 var barPadding = 1;
+var max_val;
 var barHeightFactor;
 var barWidth;
 var x;
@@ -18,6 +16,40 @@ var chartContainer;
 var borderPath;
 var barsContainer;
 
+var incoming_runs_data = [[-21, 2], [-13, 2], [-12, 24], [-11, 3], [0,1]];
+var incoming_error_data = [[-21, 1], [-13, 1], [-12, 26],[-11, 3]];
+var formatted_runs_data = Array.apply(null, new Array(24)).map(Number.prototype.valueOf,0);
+var formatted_error_data = Array.apply(null, new Array(24)).map(Number.prototype.valueOf,0);
+
+function formatData(){
+	for (var i=0; i<incoming_runs_data.length; i++){
+		var loc = incoming_runs_data[i][0] * (-1); 	// location
+		var val = incoming_runs_data[i][1]; 		// value
+		formatted_runs_data[loc] = val;
+	}
+	for (var i=0; i<incoming_error_data.length; i++){
+		var loc = incoming_error_data[i][0] * (-1);	// location
+		var val = incoming_error_data[i][1];		// value
+		formatted_error_data[loc] = val;
+	}
+}		
+function calcBarHeightFactor(){
+	var max_run = Math.max.apply(Math, formatted_runs_data);
+	var max_error = Math.max.apply(Math, formatted_error_data);
+	max_val = Math.max(max_run, max_error);
+	barHeightFactor = (h) / max_val;
+	console.log("barHeightFactor: " + barHeightFactor);
+}
+function calcBarWidth(){
+	barWidth = (w / formatted_runs_data.length);
+}
+
+formatData();
+calcBarHeightFactor();
+calcBarWidth();
+
+console.log(formatted_runs_data);
+console.log(formatted_error_data);
 
 chartContainer = d3.select("div").append("svg")
 		.attr("width", w)
@@ -42,32 +74,22 @@ borderPath = chartContainer.append("g")
 barsContainer = chartContainer.append("g")
 		.attr("class", "bar_group");
 			
-		
-function calcBarHeightFactor(){
-	var max_error = Math.max.apply(Math, dataset_error);
-	var max_run = Math.max.apply(Math, dataset_runs);
-	var max = Math.max(max_error, max_run);
-	barHeightFactor = (h - (h % max)) / max;
-}
-function calcBarWidth(){
-	barWidth = (w / dataset_runs.length);
-}
 
-calcBarHeightFactor();
-calcBarWidth();
+
 
 x = d3.scale.linear().range([w - barPadding, 0]);
 y = d3.scale.linear().range([h, 0]);
-x.domain([0, dataset_runs.length*(-1)]);
-y.domain(d3.extent(dataset_runs, function(d) { return d; }));
+//console.log("y: " + y);
+x.domain([0, formatted_runs_data.length*(-1)]);
+y.domain([0, max_val]);
 xAxis = d3.svg.axis().scale(x).orient("bottom");
 yAxis = d3.svg.axis().scale(y).orient("left");
-yAxisMinor = d3.svg.axis().scale(y).orient("left").ticks(4).tickSize(3,3).tickSubdivide(2).tickFormat('');
+//yAxisMinor = d3.svg.axis().scale(y).orient("left").ticks(4).tickSize(3,3).tickSubdivide(2).tickFormat('');
 	 
 var runs = barsContainer.append("g")
 		.attr("class", "run_bars")
 		.selectAll(".bars")
-		.data(dataset_runs)
+		.data(formatted_runs_data)
 		.enter()
 		.append("rect")
 		.attr("x", function(d, i){
@@ -86,7 +108,7 @@ var runs = barsContainer.append("g")
 var errors = barsContainer.append("g")
 		.attr("class", "error_bars")
 		.selectAll(".bars")
-		.data(dataset_error)
+		.data(formatted_error_data)
 		.enter()
 		.append("rect")
 		.attr("x", function(d, i){
@@ -105,7 +127,7 @@ var errors = barsContainer.append("g")
 var placeholders = barsContainer.append("g")
 		.attr("class", "placeholder_bars")
 		.selectAll(".bars")
-		.data(dataset_runs)
+		.data(formatted_runs_data)
 		.enter()
 		.append("rect")
 		.attr("x", function(d, i){
@@ -157,8 +179,8 @@ d3.select("svg").append("g")
 		
     function mouseover(d, i, t){
 		var id
-		if (i>=dataset_runs.length){
-			id = i-dataset_runs.length;
+		if (i>=formatted_runs_data.length){
+			id = i-formatted_runs_data.length;
 		}
 		else{
 			id = i;
